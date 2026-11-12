@@ -1,0 +1,18 @@
+# Render Blueprint for Nope — a single static page, no build step.
+services:
+  - type: web
+    name: nope
+    runtime: static
+    buildCommand: echo "Nothing to build. Nope is one HTML file."
+    staticPublishPath: ./public
+    headers:
+      # always fetch the latest version of the game after a deploy
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin

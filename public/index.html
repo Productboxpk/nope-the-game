@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Nope</title>
+<meta name="author" content="Engineers at Productbox (productbox.dev)">
+<meta name="description" content="Nope — a calm, peaceful platformer. (It is not calm. It is not peaceful.) Created by Engineers with love at Productbox.">
+<meta name="theme-color" content="#0d0e12">
+<meta property="og:title" content="Nope">
+<meta property="og:description" content="A calm, peaceful platformer. Very relaxing. Trust me.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2314161c'/%3E%3Crect x='10' y='6' width='12' height='20' fill='%23ffcc4d'/%3E%3Crect x='12' y='8' width='8' height='18' fill='%23d9a12a'/%3E%3Ccircle cx='18' cy='17' r='1.3' fill='%2314161c'/%3E%3C/svg%3E">
+
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;background:#0d0e12;color:#e9e4d4;font-family:'VT323',monospace;height:100%}
+  #wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;padding:12px;box-sizing:border-box;gap:10px}
+  canvas{width:min(100%, calc((100vh - 110px) * 16 / 9));aspect-ratio:16/9;display:block;border-radius:8px;touch-action:none;outline:none;box-shadow:0 0 0 2px #23262f}
+  .help{font-size:20px;opacity:.65;text-align:center}
+  #touch{display:none;gap:12px;width:min(100%,960px);justify-content:space-between}
+  #touch .pad{display:flex;gap:12px}
+  #touch button{font:inherit;font-size:30px;background:#1d2029;color:#e9e4d4;border:2px solid #3a3f4d;border-radius:14px;padding:14px 28px;touch-action:none;user-select:none;-webkit-user-select:none}
+  #touch button:active{background:#2b2f3a}
+
+  /* name prompt + scoreboard overlays */
+  .ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(8,9,12,.82);z-index:10;padding:16px;box-sizing:border-box}
+  .ov.show{display:flex}
+  .card{background:#14161c;border:2px solid #3a3f4d;border-radius:14px;padding:22px 24px;width:min(520px,100%);max-height:100%;overflow:auto;box-sizing:border-box;text-align:center}
+  .card h2{margin:0 0 6px;font-weight:normal;font-size:40px;color:#ffcc4d;letter-spacing:1px}
+  .card p{margin:6px 0;font-size:22px;opacity:.85}
+  .card .small{font-size:17px;opacity:.55}
+  .card input{font:inherit;font-size:28px;width:100%;box-sizing:border-box;margin:12px 0;padding:10px 14px;background:#0d0e12;color:#e9e4d4;border:2px solid #3a3f4d;border-radius:10px;outline:none;-webkit-user-select:text;user-select:text;touch-action:auto}
+  .card input:focus{border-color:#ffcc4d}
+  .btn{font:inherit;font-size:24px;background:#ffcc4d;color:#14161c;border:0;border-radius:10px;padding:10px 22px;cursor:pointer}
+  .btn.ghost{background:transparent;color:#e9e4d4;border:2px solid #3a3f4d}
+  .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+  #joke{font-size:34px;color:#e9e4d4;line-height:1.2}
+  table.sb{width:100%;border-collapse:collapse;margin-top:10px;font-size:21px;text-align:left}
+  table.sb th{font-weight:normal;color:#8a90a0;font-size:17px;padding:4px 6px;border-bottom:1px solid #2b2f3a}
+  table.sb td{padding:6px;border-bottom:1px solid #1f222b}
+  table.sb tr.me td{color:#ffcc4d}
+  table.sb td.rank{width:2.2em;color:#8a90a0}
+  table.sb td.d{color:#ff5a4f;text-align:right;white-space:nowrap}
+  #sbBtn{font:inherit;font-size:20px;background:#1d2029;color:#e9e4d4;border:2px solid #3a3f4d;border-radius:10px;padding:6px 14px;cursor:pointer}
+  #rotate{display:none;font-size:20px;opacity:.7;text-align:center}
+  @media (pointer:coarse){
+    html,body{overscroll-behavior:none;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+    #touch{display:flex}
+    .help{font-size:0}
+    .help span{font-size:18px}
+    #wrap{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+    #touch button{-webkit-touch-callout:none;min-height:64px}
+  }
+  @media (pointer:coarse) and (orientation:portrait){ #rotate{display:block} }
+  /* phone held sideways: game fills the height, controls sit in the side gutters under your thumbs */
+  @media (pointer:coarse) and (orientation:landscape){
+    #wrap{padding:6px max(10px,env(safe-area-inset-right)) 6px max(10px,env(safe-area-inset-left));gap:0}
+    canvas{width:min(calc(100vw - 300px - env(safe-area-inset-left) - env(safe-area-inset-right)), calc((100vh - 12px) * 16 / 9));
+           width:min(calc(100vw - 300px - env(safe-area-inset-left) - env(safe-area-inset-right)), calc((100dvh - 12px) * 16 / 9))}
+    #touch{position:fixed;left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));width:auto;pointer-events:none;
+           padding:0 max(10px,env(safe-area-inset-right)) 0 max(10px,env(safe-area-inset-left));box-sizing:border-box}
+    #touch .pad{gap:8px}
+    #touch button{pointer-events:auto;padding:0;width:64px;height:84px;font-size:28px}
+    #touch button[data-k=jump]{width:128px}
+  }
+</style>
+</head>
+<body>
+
+<div class="ov" id="nameOv" role="dialog" aria-label="Your name">
+  <div class="card" id="nameCard">
+    <h2>Before we begin</h2>
+    <p>What's your name?</p>
+    <form id="nameForm" autocomplete="off"><input id="nameIn" maxlength="24" placeholder="type it here" aria-label="Your name">
+      <div class="row"><button class="btn" type="submit">That's me</button></div></form>
+    <p class="small">Just so we know who played. Nothing serious.</p>
+  </div>
+  <div class="card" id="jokeCard" style="display:none"><div id="joke"></div></div>
+</div>
+<div class="ov" id="sbOv" role="dialog" aria-label="Deathboard">
+  <div class="card">
+    <h2>☠ The Deathboard</h2>
+    <p id="sbJoke" style="display:none;color:#ff5a4f;font-size:24px"></p>
+    <p class="small">Fewest deaths on top. Everyone below: public shame.</p>
+    <div id="sbBody"><p>Loading…</p></div>
+    <p class="small" id="sbWhere"></p>
+    <div class="row"><button class="btn ghost" id="sbNew" type="button">New player</button><button class="btn ghost" id="sbClose" type="button">Close</button></div>
+  </div>
+</div>
+<div id="wrap">
+  <canvas id="c" tabindex="0" aria-label="Nope game canvas"></canvas>
+  <div id="touch">
+    <div class="pad"><button data-k="left" aria-label="Left">◀</button><button data-k="right" aria-label="Right">▶</button></div>
+    <button data-k="jump">JUMP</button>
+  </div>
+  <div id="rotate">↻ Turn your phone sideways for a bigger screen</div>
+  <div class="row" style="margin:0"><button id="sbBtn" type="button">☠ Deathboard</button></div>
+  <div class="help">← → or A D to move · Space / W / ↑ to jump · R restart level · M mute<br><span style="opacity:.8">Nope · Created by Engineers with <span style="color:#ff5a4f">♥</span> at <a href="https://productbox.dev" style="color:#ffcc4d;text-decoration:none">Productbox (productbox.dev)</a></span></div>
+</div>
+<script>
+(() => {
+const W = 960, H = 540, G = 2100, JUMP = 760, MAXS = 290;
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+function resize(){ const d = Math.min(window.devicePixelRatio || 1, 2); cv.width = W*d; cv.height = H*d; ctx.setTransform(d,0,0,d,0,0); }
+resize(); addEventListener('resize', resize);
+const FONT = "'VT323', monospace";
+
+/* ---------- audio ---------- */
+let ac = null, muted = false;
+function initAudio(){ if(!ac){ try{ ac = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(ac && ac.state==='suspended') ac.resume().catch(()=>{}); }
+function tone(f,d,type='square',vol=.05,slide=0){
+  if(!ac||muted) return;
+  try{
+    const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();
+    o.type=type; o.frequency.setValueAtTime(f,t);
+    if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(30,f+slide),t+d);
+    g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t+d);
+  }catch(e){}
+}
+const sfx = {
+  jump:()=>tone(380,.12,'square',.04,320),
+  die:()=>tone(320,.45,'sawtooth',.06,-260),
+  whoosh:()=>tone(950,.25,'triangle',.06,-750),
+  door:()=>{tone(520,.1,'square',.05); setTimeout(()=>tone(780,.16,'square',.05),90);},
+  blip:()=>tone(1100+Math.random()*200,.025,'square',.012),
+};
+
+/* ---------- input ---------- */
+const input = {left:false,right:false,jump:false}; let jumpQueued = 0;
+const keymap = {ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',Space:'jump',KeyW:'jump',ArrowUp:'jump'};
+function press(k){ if(k==='jump' && !input.jump) jumpQueued = .12; input[k] = true; }
+addEventListener('keydown', e => {
+  if(uiOpen()){ if(e.code==='Escape') closeBoard(); return; }
+  initAudio();
+  const k = keymap[e.code];
+  if(k){ e.preventDefault(); }
+  if(state!=='play'){ if(e.code==='KeyS'){ openBoard(); return; } if(!e.repeat && (k || e.code==='Enter' || e.code==='KeyR')) requestStart(); return; }
+  if(k) press(k);
+  if(e.code==='KeyR') restartLevel();
+  if(e.code==='KeyM') muted = !muted;
+});
+addEventListener('keyup', e => { if(uiOpen()) return; const k = keymap[e.code]; if(k) input[k] = false; });
+addEventListener('blur', () => { input.left = input.right = input.jump = false; });
+document.querySelectorAll('#touch button').forEach(b => {
+  const k = b.dataset.k;
+  b.addEventListener('pointerdown', e => { e.preventDefault(); initAudio(); if(state!=='play'){ requestStart(); return; } press(k); });
+  ['pointerup','pointercancel','pointerleave'].forEach(t => b.addEventListener(t, e => { e.preventDefault(); input[k] = false; }));
+});
+addEventListener('contextmenu', e => e.preventDefault());
+cv.addEventListener('pointerdown', () => { initAudio(); cv.focus(); if(state!=='play') requestStart(); });
+
+/* ---------- helpers ---------- */
+const R = (x,y,w,h,o) => Object.assign({x,y,w,h,vx:0,vy:0,solid:true},o||{});
+const door = (x,floorY=480) => ({x,y:floorY-60,w:40,h:60,active:true});
+const overlap = (a,b) => a.x<b.x+b.w && a.x+a.w>b.x && a.y<b.y+b.h && a.y+a.h>b.y;
+const pick = a => a[Math.floor(Math.random()*a.length)];
+
+/* ---------- turrets & bolts ---------- */
+// near/far: distance band where Kevin goes from chill (far) to completely unhinged (near). heat scales the madness.
+function turret(x,y,mount,o){ return Object.assign({x,y,mount,ang:mount==='top'?Math.PI/2:mount==='left'?0:Math.PI,cool:1.2,near:150,far:560,heat:1,k:0,nuts:false,off:false},o||{}); }
+let bolts = [];
+function angDiff(a,b){ let d=a-b; while(d>Math.PI) d-=2*Math.PI; while(d<-Math.PI) d+=2*Math.PI; return d; }
+function fire(t,a,speed){
+  bolts.push({x:t.x+Math.cos(a)*24,y:t.y+Math.sin(a)*24,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,hot:t.nuts});
+}
+function stepTurrets(dt){
+  for(const t of L.turrets){
+    if(t.off){ t.k=0; t.nuts=false; continue; }
+    if(t.overheat>0){ // cooling off: no shooting, just steam
+      t.overheat-=dt; t.k*=1-Math.min(1,dt*3); t.nuts=false;
+      if(Math.random()<dt*14) particles.push({x:t.x+(Math.random()-.5)*14,y:t.y-10,vx:(Math.random()-.5)*30,vy:-60-Math.random()*60,life:.7,s:4,c:'#9aa0ad'});
+      if(t.overheat<=0){ t.streak=0; t.cool=.6; }
+      continue;
+    }
+    const px=P.x+P.w/2, py=P.y+P.h/2, dx=px-t.x, dy=py-t.y, d=Math.hypot(dx,dy);
+    const k = t.berserk ? 1 : Math.max(0,Math.min(1,(t.far-d)/(t.far-t.near)));
+    t.k += (k-t.k)*Math.min(1,dt*14); // reacts fast: no sprinting past Kevin
+    t.ang += angDiff(Math.atan2(dy,dx),t.ang)*Math.min(1,dt*(2.5+t.k*14));
+    const wasNuts = t.nuts; t.nuts = t.k>.62;
+    if(t.nuts && !wasNuts){ t.cool=Math.min(t.cool,t.berserk?.7:.15); tone(180,.3,'sawtooth',.05,400); if(!L.nutsSaid){ L.nutsSaid=1; say(pick(NUTS),1.6); } }
+    if(P.dead || P.frozen || P.hidden || d>t.far+260) continue;
+    t.cool -= dt;
+    if(t.cool>0) continue;
+    if(t.nuts){
+      // burst: a fan of bolts, sometimes a full ring when it's really losing it
+      const h=t.heat, n=t.berserk ? 11 : Math.round(4+4*h*t.k), spread=t.berserk ? .6 : .22+.45*t.k, sp=(t.berserk?60:0)+280+230*t.k*h;
+      for(let i=0;i<n;i++) fire(t,t.ang+(i/(n-1)-.5)*spread*2+(Math.random()-.5)*.06,sp*(.9+Math.random()*.2));
+      if((h>1.05 && Math.random()<.3) || (t.berserk && Math.random()<.12)){ for(let i=0;i<14;i++) fire(t,i/14*Math.PI*2+t.ang,220); }
+      t.cool = t.berserk ? .62+Math.random()*.2 : Math.max(.35, .8 - .3*h*t.k);
+      t.streak=(t.streak||0)+1; t.calm=0;
+      if(t.streak>=4 && !t.noTire){ t.overheat=2.6; t.cool=0; tone(90,.6,'sawtooth',.05,-40);
+        if(!L.heatSaid){ L.heatSaid=1; say("Kevin overheated. Kevin needs a minute.",1.6); } }
+      shake = Math.max(shake,.12); tone(140,.12,'square',.04,-60);
+    } else {
+      t.calm=(t.calm||0)+t.cool; if(t.calm>1.5) t.streak=0;
+      fire(t,t.ang+(Math.random()-.5)*.08,190+160*t.k);
+      t.cool = 1.9 - 1.1*t.k;
+      tone(700,.05,'square',.02,-200);
+    }
+  }
+}
+function stepBolts(dt){
+  const hb = P && !P.dead && !P.hidden ? {x:P.x+4,y:P.y+4,w:P.w-8,h:P.h-6} : null;
+  for(const b of bolts){
+    b.x += b.vx*dt; b.y += b.vy*dt;
+    if(b.x<-20||b.x>W+20||b.y<-20||b.y>H+20){ b.dead=1; continue; }
+    for(const s of L.solids){ if(s.solid && b.x>s.x && b.x<s.x+s.w && b.y>s.y && b.y<s.y+s.h){ b.dead=1; spark(b.x,b.y);
+      if(s.hp){ s.hp--; s.hitT=.08; if(s.hp<=0) breakPillar(s); }
+      break; } }
+    if(!b.dead && hb && b.x>hb.x && b.x<hb.x+hb.w && b.y>hb.y && b.y<hb.y+hb.h){ b.dead=1; kill('bolt'); }
+  }
+  bolts = bolts.filter(b=>!b.dead);
+}
+function breakPillar(s){
+  s.solid=false; shake=Math.max(shake,.2); tone(90,.35,'square',.06,-50);
+  for(let i=0;i<22;i++) particles.push({x:s.x+Math.random()*s.w,y:s.y+Math.random()*s.h,vx:(Math.random()-.5)*300,vy:-Math.random()*380,life:.9,s:4+Math.random()*5,c:'#e9e4d4'});
+  tween(s,{y:s.y+s.h,h:0},.25,{ease:'in'});
+  if(!L.pillarSaid){ L.pillarSaid=1; say("Oh no. Not the pillars. Anyway.",1.4); }
+}
+function spark(x,y){ for(let i=0;i<4;i++) particles.push({x,y,vx:(Math.random()-.5)*240,vy:-Math.random()*200,life:.3,s:2,c:'#ffe066'}); }
+
+let tweens = [];
+function tween(o,to,dur,opt={}){
+  const from = {}; for(const k in to) from[k] = o[k];
+  tweens = tweens.filter(t => t.o!==o);
+  tweens.push({o,from,to,dur,t:0,ease:opt.ease||'out',arc:opt.arc||0,done:opt.done});
+}
+function ease(e,k){ return e==='in' ? k*k : e==='lin' ? k : 1-(1-k)*(1-k); }
+function stepTweens(dt){
+  for(const tw of tweens){
+    tw.t += dt; const k = Math.min(1,tw.t/tw.dur), e = ease(tw.ease,k);
+    for(const p in tw.to) tw.o[p] = tw.from[p] + (tw.to[p]-tw.from[p])*e;
+    if(tw.arc) tw.o.y -= Math.sin(Math.PI*k)*tw.arc;
+    if(k>=1 && !tw.fin){ tw.fin = 1; tw.done && tw.done(); }
+  }
+  tweens = tweens.filter(t => !t.fin);
+}
+
+/* ---------- narrator ---------- */
+let N = {text:'',t:99,hold:0,next:null,shown:0};
+function say(text,hold){ N = {text,t:0,hold:hold ?? Math.max(2.2,text.length/16),next:null,shown:0}; }
+function sayNext(text){ if(N.t < N.text.length/45 + N.hold) N.next = text; else say(text); }
+function stepNarrator(dt){
+  N.t += dt;
+  const chars = Math.min(N.text.length, Math.floor(N.t*45));
+  if(chars > N.shown){ if(chars % 3 === 0) sfx.blip(); N.shown = chars; }
+  const total = N.text.length/45 + N.hold;
+  if(N.t > total + .35 && N.next){ const n = N.next; say(n); }
+}
+const BOLT_DEATH = ["Bolted.","Kevin says sorry. Kevin is lying.","That one had your name on it.","You walked into a bullet hell. With your face.","Personal space. Kevin warned you."];
+const NUTS = ["Oh no. It's excited.","PERSONAL SPACE. KEVIN NEEDS PERSONAL SPACE.","It gets a little clingy up close.","Kevin is having a moment."];
+const DEATH = ["Wow.","That was on you.","I'm writing that down.","Death #{d}. Collect them all.","Have you tried not doing that?","Bold strategy.","The floor is not optional.","Respectfully: skill issue.","I felt that one. Not really."];
+
+/* ---------- levels ---------- */
+let levelDeaths = 0;
+const LEVELS = [
+{ name:'1 · The Door',
+  // Every approach dies in a NEW way. After 6 deaths (7th try) the door finally gives up.
+  intro:d => ["See the door? Walk to it. That's the whole game.",
+              "Okay. No more portals. Just walk.",
+              "No portals. No spikes. Honest.",
+              "The door has calmed down. It's in therapy now.",
+              "Nothing up there. Nothing down there. Totally safe.",
+              "Floor: fine. Ceiling: fine. Door: ...probably fine.",
+              "Fine. FINE. Go through the stupid door."][Math.min(d,6)],
+  deathLine:d => [null,"Portals are one-way. Mostly into spikes.","Spikes aren't portals. I kept my word.",
+                  "Doors can't jump. Nobody told that door.","The ceiling had opinions.",
+                  "The floor was more of a suggestion.","That wasn't a door. That was a mouth."][d] || null,
+  build(){
+    const d=levelDeaths, L={door:door(600), spikes:[], portals:[]};
+    if(d===4){ L.trap=R(330,480,240,60); L.solids=[R(0,480,330,60),L.trap,R(570,480,390,60)]; }
+    else L.solids=[R(0,480,960,60)];
+    if(d>=6) L.door.shiver=1; else L.door.active=false; // no sneaking in before try 7, even if you outrun a trap
+    return L;
+  },
+  update(L,p,dt){
+    const d=levelDeaths, dr=L.door, clamp=(v,m)=>Math.max(-m,Math.min(m,v));
+    if(d===0){ // try 1: a portal swallows you and spits you out at the start, onto a fresh spike
+      if(L.stage===0 && p.x>380){ L.stage=1; const pt={x:p.x+130,y:450,r:0}; L.portals.push(pt); L.pin=pt; tween(pt,{r:34},.25); tone(300,.4,'sine',.06,500); say("Ooh. A shortcut.",1.2); }
+      else if(L.stage===1){ const cx=p.x+p.w/2; L.pin.x += clamp(cx-L.pin.x,520*dt);
+        if(Math.abs(cx-L.pin.x)<16){ L.stage=2; L.st=0; P.hidden=true; P.frozen=true; tween(L.pin,{r:0},.3);
+          const out={x:60,y:170,r:0}; L.portals.push(out); L.pout=out; tween(out,{r:34},.3); tone(800,.4,'sine',.06,-600); } }
+      else if(L.stage===2){ L.st+=dt; if(L.st>.6){ L.stage=3; const sp={x:6,y:480,w:110,h:0}; L.spikes.push(sp); tween(sp,{y:452,h:28},.15);
+          Object.assign(P,{hidden:false,frozen:false,x:48,y:160,vx:0,vy:0,noControl:3}); tween(L.pout,{r:0},.4); } }
+    }
+    else if(d===1){ // try 2: a spike pops up right under your feet
+      if(L.stage===0 && p.x>420 && p.ground){ L.stage=1; const sp={x:p.x-33,y:480,w:90,h:0}; L.spikes.push(sp); tween(sp,{y:452,h:28},.06); sfx.whoosh(); }
+    }
+    else if(d===2){ // try 3: the door runs away, then jumps on you
+      if(L.stage===0 && p.x>420){ L.stage=1; dr.active=false; sfx.whoosh(); tween(dr,{x:880},.3); say("Nope.",1); }
+      else if(L.stage===1 && (p.x>660 || L.t>6)){ L.stage=2; L.ht=0; L.y0=dr.y; sfx.whoosh(); say("HUG!",1); }
+      else if(L.stage===2){ L.ht+=dt; const k=Math.min(1,L.ht/.6);
+        dr.x += clamp((p.x-8)-dr.x,950*dt); dr.y = L.y0 - Math.sin(Math.PI*k)*220;
+        if(k>.5 && overlap(p,dr)){ shake=.3; kill('crush'); }
+        else if(k>=1){ dr.y=L.y0; L.ht=0; } } // missed? it just hops again
+    }
+    else if(d===3){ // try 4: a crusher follows you along the ceiling, then drops
+      if(L.stage===0 && p.x>300){ L.stage=1; L.st=0; L.cr=R(p.x-38,-130,100,110,{crusher:1}); tween(L.cr,{y:85},.25); tone(110,.5,'square',.04); }
+      else if(L.stage===1){ L.st+=dt; L.cr.x += clamp((p.x+p.w/2-50)-L.cr.x,520*dt);
+        if(L.st>.45 || p.x>520){ L.stage=2; tween(L.cr,{y:370},.12,{ease:'in',done:()=>{ shake=.3; tone(70,.3,'sawtooth',.07,-30); L.solids.push(L.cr); }}); } }
+      if(L.stage===2 && overlap({x:p.x+3,y:p.y,w:p.w-6,h:p.h},L.cr)) kill('crush');
+    }
+    else if(d===4){ // try 5: trapdoor opens and the pit sucks you in
+      if(L.stage===0 && p.x>290){ L.stage=1; L.trap.solid=false; tween(L.trap,{y:700},.35,{ease:'in'}); sfx.whoosh(); say("Mind the gap.",1); }
+      if(L.stage===1 && p.x>250 && p.x<600 && p.y>360){ p.vy += 5200*dt; p.x += (450-p.x)*dt*2.6; }
+    }
+    else if(d===5){ // try 6: the door is a mimic
+      if(L.stage===0 && p.x>470){ L.stage=1; dr.active=false; dr.mimic=1; shake=.2; tone(90,.4,'sawtooth',.07,120); say("RAAAH!",1); tween(dr,{x:p.x-4},.2,{ease:'in'}); }
+      if(L.stage===1 && overlap(p,dr)) kill('crush');
+    }
+    // try 7+: nothing. The door gives up.
+  },
+  draw(L){ for(const pt of L.portals) drawPortal(pt); if(L.cr) drawCrusher(L.cr); }},
+{ name:'2 · The Gap',
+  // Try 1: the far side drops the moment you jump.  Try 2: the block before the gap grabs you and drags you down.
+  // After that (no hints given): the LANDING side flinches whenever you jump near the gap. Hop to make it
+  // flinch, wait for it to come back (it stays put for ~3s), then cross.
+  // Linger on your side too long and a portal shows up. It alternates between throwing you across
+  // (and moving the door to the side you just left) and dropping you into the ditch.
+  intro:d => ["A tiny gap. Even you can jump this.","Okay, okay. I won't touch the floor this time. Promise.",
+              "Third time's the charm. Statistically.","The gap hasn't moved. Has it?","Still here? Bold.",
+              "I believe in you. Not really."][d<6 ? d : 3+d%3],
+  deathLine:d => d===1 ? "Huh. Floor must've been tired." : d===2 ? "I didn't touch THAT floor. I touched YOUR floor." : null,
+  build:() => { const lip=R(560,480,120,60), edge=R(320,480,80,60);
+    lip.fl={state:'up',tired:0}; edge.fl={state:'up',tired:0};
+    return {solids:[R(0,480,320,60),edge,lip,R(680,480,280,60)], lip, edge, portals:[], idle:0, nextIdle:6, side:'left', door:door(900)}; },
+  update(L,p,dt){
+    const d=levelDeaths, mem=L.def.mem||(L.def.mem={trolls:0});
+    // the two blocks either side of the gap: flinch → drop → come back → stay put for 3s
+    for(const b of [L.lip,L.edge]){ const f=b.fl; f.tired=Math.max(0,f.tired-dt);
+      if(f.state==='down'){ f.back-=dt; if(f.back<=0){ f.state='rising'; tween(b,{y:480},.35,{done:()=>{ b.solid=true; f.state='up'; f.tired=3; }}); } } }
+    const flinch=b=>{ const f=b.fl; if(f.state!=='up'||f.tired>0) return; f.state='down'; f.back=1.3; b.solid=false; sfx.whoosh(); tween(b,{y:660},.3,{ease:'in'}); };
+
+    if(L.pt){ portalTroll(L,p,dt); return; }
+
+    if(d===1){ // try 2: the block before the gap grabs you
+      if(!L.grabbed && p.ground===L.edge && p.x>300){
+        L.grabbed=1; L.edge.grab=1; p.stuck=L.edge; shake=.2; sfx.whoosh(); tone(120,.5,'sawtooth',.06,-60);
+        tween(L.edge,{y:720},.6,{ease:'in'}); say("Gotcha.",1); return;
+      }
+    } else if(!p.ground && p.vy<0){ // jumping near the gap: the side you'd land on flinches
+      if(p.x>270 && p.x<420) flinch(L.lip);
+      else if(p.x>540 && p.x<690) flinch(L.edge);
+    }
+
+    // hanging around on your side too long → portal
+    const onMySide = L.side==='left' ? p.x<400 : p.x>540;
+    if(onMySide && p.ground) L.idle+=dt;
+    if(L.idle>L.nextIdle){ L.idle=0; L.nextIdle=5; mem.trolls++;
+      const kind = mem.trolls%2===1 ? 'across' : 'ditch';
+      const inP={x:p.x+12+(L.side==='left'?80:-80),y:450,r:0}; L.portals=[inP];
+      L.pt={kind,stage:0,t:0,inP}; tween(inP,{r:34},.25); tone(300,.4,'sine',.06,500);
+      say("Taking your time? Let me help.",1.6);
+    }
+  },
+  draw(L){ for(const pt of L.portals) drawPortal(pt); } },
+{ name:'3 · The Stairs',
+  // A new betrayal every try. From try 8 (7 deaths) the stairs play fair-ish: the middle step still
+  // crumbles if you stand on it too long, the top still drops you into the basement, but you can make it.
+  intro:d => ["Stairs. Very safe, very normal stairs.",
+              "The middle step has been fired. The others are fine.",
+              "Okay, the steps are fine. All of them. Promise.",
+              "Steps: behaving. Ceiling: not my department.",
+              "You know the drill. Floor drops, you land downstairs. Safe.",
+              "Just walk into the door. Doors are safe. Mostly.",
+              "Down the hatch, into the basement, through the door. Easy.",
+              "Fine. You win. Probably."][Math.min(d,7)],
+  deathLine:d => [null,"Told you. Very normal stairs.","That step had somewhere to be.","Shy step. Should've asked first.",
+                  "The ceiling says hi.","Downstairs was also a trapdoor. Classic.",
+                  "That wasn't a door. That was a portal. To spikes.","Rule two: check under YOURSELF."][d] || null,
+  build(){
+    const d=levelDeaths;
+    const s1=R(260,420,90,18), s2=R(410,360,90,18,{crumble:0}), s3=R(560,300,90,18), top=R(700,300,260,18), base=R(620,510,340,30);
+    const L={solids:[R(0,480,200,60),s1,s2,s3,top,base], s1,s2,s3,top,base, portals:[],
+             spikes:[{x:200,y:514,w:420,h:26}], door:door(900,300)};
+    if(d<7) L.door.active=false; // no shortcuts before try 8
+    return L;
+  },
+  update(L,p,dt){
+    const d=levelDeaths, clamp=(v,m)=>Math.max(-m,Math.min(m,v));
+    const drop=(b,t=.4)=>{ if(!b.solid) return; b.solid=false; sfx.whoosh(); tween(b,{y:b.y+380},t,{ease:'in'}); };
+
+    // middle step: instant on try 1, harmless on tries 2-7 (so you meet the other traps), touchy again from try 8
+    const thr = d===0 ? 0 : d>=7 ? .25 : Infinity;
+    if(L.s2.solid && p.ground===L.s2){ L.s2.crumble+=dt; if(L.s2.crumble>thr) drop(L.s2,.5); }
+
+    if(d===1 && (p.ground===L.s1 || p.ground===L.s2)) drop(p.ground,.35); // try 2: whichever step you land on bails
+    if(d===2 && !L.shy && !p.ground && p.x>450 && p.y<360 && p.x<560){ // try 3: third step runs up, middle drops
+      L.shy=1; tween(L.s3,{y:170},.25); drop(L.s2,.5); say("Eep.",.8);
+    }
+    if(d===3){                                                         // try 4: crusher on the third step
+      if(!L.cr && (p.ground===L.s3 || p.ground===L.top)){ L.st=0; L.cr=R(p.x-23,-130,70,110); tween(L.cr,{y:60},.2); tone(110,.5,'square',.04); }
+      if(L.cr && !L.crDrop){ L.st+=dt; L.cr.x += clamp((p.x+p.w/2-35)-L.cr.x,520*dt);
+        if(L.st>.35){ L.crDrop=1; tween(L.cr,{y:190},.1,{ease:'in',done:()=>{ shake=.3; tone(70,.3,'sawtooth',.07,-30); L.solids.push(L.cr); }}); } }
+      if(L.crDrop && overlap({x:p.x+3,y:p.y,w:p.w-6,h:p.h},L.cr)) kill('crush');
+    }
+    if(d===5){                                                         // try 6: the door is a portal to the pit
+      if(!L.pt && p.x>790 && p.y<300){ const pt={x:L.door.x+20,y:L.door.y+30,r:0}; L.portals=[pt]; L.pt={stage:0,inP:pt};
+        L.door.y=-999; tween(pt,{r:34},.25); tone(300,.4,'sine',.06,500); say("Door's out. Portal's in.",1.2); }
+      if(L.pt){ const T=L.pt, cx=p.x+p.w/2;
+        if(T.stage===0){ T.inP.x+=clamp(cx-T.inP.x,420*dt);
+          if(Math.abs(cx-T.inP.x)<16){ T.stage=1; T.t=0; P.hidden=true; P.frozen=true; tween(T.inP,{r:0},.3);
+            T.out={x:380,y:150,r:0}; L.portals.push(T.out); tween(T.out,{r:34},.3); tone(800,.4,'sine',.06,-600); } }
+        else if(T.stage===1){ T.t+=dt; if(T.t>.55){ T.stage=2; tween(T.out,{r:0},.4);
+          Object.assign(P,{hidden:false,frozen:false,x:368,y:135,vx:0,vy:0,noControl:3}); } }
+      }
+    }
+    // the top platform drops you into the basement (tries 5, 7, 8+). On try 5 the basement goes too.
+    if((d===4 || d>=6) && L.stage===0 && p.x>780 && p.y<300){
+      L.stage=1; drop(L.top,.6); tween(L.door,{y:d===4?900:450},.5,{ease:'in'});
+      if(d===4){ drop(L.base,.7); say("Always check what's under the door. And under that.",2); }
+      else say("Rule one: always check what's under the door.",2);
+    }
+    if(d===6 && p.ground===L.base){                                    // try 7: basement floor sprouts spikes
+      L.bt=(L.bt||0)+dt;
+      if(L.bt>.2 && !L.spiked){ L.spiked=1; const sp={x:p.x-33,y:510,w:90,h:0}; L.spikes.push(sp); tween(sp,{y:482,h:28},.06); sfx.whoosh(); }
+    }
+  },
+  draw(L){ for(const pt of L.portals) drawPortal(pt); if(L.cr) drawCrusher(L.cr); }},
+{ name:'4 · The Shy One',
+  // SECRET (never hinted): the door runs from you while you face it. Turn your back and stand still and it
+  // creeps over to you. The first time you work that out, it eats you. After that it's a real exit.
+  intro:d => d===0 ? "A door. On flat ground. Even you can't mess this up."
+             : (LEVELS[3].mem && LEVELS[3].mem.eaten) ? "Okay, that one's on me. It skipped breakfast." : "Same door. Same flat ground. Same you.",
+  build:() => ({solids:[R(0,480,960,60)], door:door(700), hops:0, taunt:0}),
+  onDoor(L,p){
+    const mem = L.def.mem || (L.def.mem={});
+    if(mem.eaten){ finishLevel(); return; }
+    // first time you figure it out: it was never shy. It was hungry.
+    mem.eaten=1; L.door.active=false; L.door.mimic=1; shake=.35;
+    tone(90,.5,'sawtooth',.07,140); setTimeout(()=>tone(60,.4,'square',.06,-20),120);
+    L.deathOverride="CHOMP. Turns out shy things bite.";
+    kill('crush');
+  },
+  update(L,p,dt){
+    const dr = L.door; if(L.hopping) return;
+    const pc = p.x+p.w/2, dx = (dr.x+dr.w/2) - pc, dir = Math.sign(dx)||1;
+    const looking = p.face===dir;
+    const TAUNTS = ["It's a door. You walk to it. That's the whole thing.",
+                    "Such a basic thing. And yet.",
+                    "Walking. Toward. A door. Truly the hardest puzzle ever made.",
+                    "My grandma could do this. I don't have a grandma.",
+                    "I'm going to make a sandwich. Call me when you've solved 'door'.",
+                    "So silly. So, so silly."];
+    if(looking && Math.abs(dx)<300){
+      dr.x += dir*Math.max(180,Math.abs(p.vx)+70)*dt;
+      if(dr.x>W-50 || dr.x<10){
+        dr.x = Math.max(10,Math.min(W-50,dr.x));
+        if(Math.abs(dx)<120){
+          const nx = Math.max(10,Math.min(W-50,pc-dir*260-20));
+          L.hopping = true; L.hops++; sfx.whoosh();
+          tween(dr,{x:nx,y:dr.y},.6,{arc:190,ease:'lin',done:()=>{L.hopping=false;}});
+          if(L.hops%2===0) say(TAUNTS[(L.taunt++)%TAUNTS.length],2.4);
+        }
+      }
+    } else if(!looking && Math.abs(p.vx)<25){ dr.x -= dir*95*dt; }
+    if(L.t>12 && !L.idleTaunt && L.hops<2){ L.idleTaunt=1; say("Take your time. It's not like it's a door or anything."); }
+  }},
+{ name:'5 · Kevin',
+  // When you get close, the door flies to the BACK of the level and Kevin goes berserk (angry at any range).
+  // Getting back means hopping wall to wall: walls block bolts, and Kevin overheats after 4 bursts.
+  // No hints — just taunts.
+  intro:d => ["Meet Kevin. Kevin is a turret. Kevin is very chill.","Kevin says hi. Again.",
+              "You and Kevin are really bonding.","Kevin has never lost. Not once.","Kevin is starting to feel bad for you."][Math.min(d,4)],
+  build:() => ({solids:[R(0,480,960,60),R(330,420,34,60,{hp:5,maxHp:5}),R(590,420,34,60,{hp:5,maxHp:5}),R(790,430,30,50,{hp:5,maxHp:5})],
+                turrets:[turret(950,300,'right',{near:170,far:640,heat:1,noTire:true})], door:door(890)}),
+  update(L,p){
+    const t=L.turrets[0];
+    if(!L.moved && p.x>650){
+      L.moved=1; const dr=L.door; dr.active=false; sfx.whoosh();
+      tween(dr,{x:12,y:dr.y},1.1,{arc:240,ease:'lin',done:()=>{ dr.active=true; }});
+      t.berserk=true; t.cool=.7; shake=.25; tone(180,.5,'sawtooth',.06,500);
+      say(levelDeaths===0 ? "Oh, the door? It moved to the back. Kevin, say hi." : "Door's at the back. Kevin's awake. Good luck.",2.2);
+    }
+  }},
+{ name:'6 · Crossfire',
+  intro:d => d===0 ? "Kevin brought a friend. Her name is also Kevin." : d===2 ? "Same Kevins. Same weakness. They run hot." : d===4 ? "Bait them from far away. Then go while they cool off." : null,
+  build(){
+    const mp = R(440,390,120,18), p3 = R(720,430,90,18);
+    return {solids:[R(0,480,180,60),R(250,430,100,18),mp,p3,R(850,480,110,60)], mp, p3,
+            spikes:[{x:180,y:514,w:670,h:26}],
+            turrets:[turret(470,120,'top',{near:140,far:420,heat:1}), turret(950,220,'right',{near:160,far:520,heat:1.1})],
+            door:door(905)};
+  },
+  update(L,p){
+    L.mp.x = 440 + Math.sin(L.t*1.5)*100;
+    if(L.stage===0 && p.ground===L.p3){ L.stage=1; L.p3.solid=true; tween(L.p3,{y:620},3,{ease:'in'}); say("That platform has somewhere to be."); }
+  }},
+{ name:'7 · Rush Hour',
+  // Rage, not skill: every try dies to a different surprise. From try 7 (6 deaths) it plays fair,
+  // and a portal even offers you a shortcut (most people won't trust it).
+  // Base: the floor collapses behind you, and wobbles with your speed (fast = dips, slow = lifts) — never deadly.
+  intro:d => ["The floor is leaving. You should too.",
+              "Okay. The door won't move. Promise.",
+              "No portals this time. Just run.",
+              "Both ends? No, no. Just the one end. Probably.",
+              "Gravity is back on. Checked it myself.",
+              "Everything's normal. Totally normal controls.",
+              "Fine. You've suffered enough. Mostly."][Math.min(d,6)],
+  deathLine:d => [null,"The door had a ledge problem.","Shortcut! ...to the beginning. Which was gone.",
+                  "Plot twist: it collapses from both ends.","Gravity: optional. Spikes: not.",
+                  "Express elevator. Top floor: spikes.","Left is right. Right is wrong. You are dead."][d] || null,
+  build(){
+    const d=levelDeaths, tiles=[]; for(let i=0;i<13;i++) tiles.push(R(i*60,480,60,60,{tile:i}));
+    const ledge=R(800,400,160,18), spike={x:400,y:452,w:42,h:28};
+    const L={solids:[...tiles,ledge], tiles, ledge, spike, floorY:480, spikes:[spike], portals:[], door:door(905,400)};
+    if(d<6) L.door.active=false;  // no sneaking out before try 7
+    if(d===5) L.reverse=true;     // try 6: controls wired backwards
+    return L;
+  },
+  update(L,p,dt){
+    const d=levelDeaths, clamp=(v,m)=>Math.max(-m,Math.min(m,v));
+    const ceilSpikes=()=>{ if(!L.ceil){ L.ceil={x:0,y:82,w:960,h:0,down:true}; L.spikes.push(L.ceil); tween(L.ceil,{h:26},.2); } };
+
+    // floor: gentle wobble with your speed, or the express elevator on try 5
+    if(L.elevator) L.floorY=Math.max(30,L.floorY-380*dt);
+    else if(L.t>1.5){ const sp=Math.abs(p.vx);
+      if(sp>200) L.floorY=Math.min(500,L.floorY+60*dt); else if(sp<120) L.floorY=Math.max(440,L.floorY-60*dt); }
+    for(const t of L.tiles) if(t.solid) t.y=L.floorY;
+    L.spike.y=L.floorY-28;
+
+    // collapse from the left (and from the right too on try 4)
+    if(L.t>2){
+      const rate = d===5 ? 2.8 : 2.0, idx=Math.floor((L.t-2)*rate);
+      for(const t of L.tiles){
+        const goes = t.tile<=idx || (d===2 && t.tile>=12-idx);
+        if(goes && t.solid){ t.solid=false; tween(t,{y:t.y+700},.9,{ease:'in'}); if(t.tile%3===0) sfx.whoosh(); }
+        else if(t.tile===idx+1 || (d===2 && t.tile===11-idx)) t.crumble=1;
+      }
+      if(L.stage===0){ L.stage=1; if(d===0) say("Run."); if(d===2){ say("Plot twist.",1); L.ledge.solid=false; tween(L.ledge,{y:700},.6,{ease:'in'}); tween(L.door,{y:700},.6,{ease:'in'}); } }
+    }
+
+    if(d===0 && !L.dropped && !p.ground && p.x>690){           // try 1: ledge + door drop as you jump for them
+      L.dropped=1; L.ledge.solid=false; sfx.whoosh(); tween(L.ledge,{y:700},.4,{ease:'in'}); tween(L.door,{y:700},.4,{ease:'in'}); say("Eep.",.8);
+    }
+    if(d===1){                                                  // try 2: portal back to the (collapsed) start
+      if(!L.pt && p.x>380){ const pt={x:p.x+130,y:L.floorY-30,r:0}; L.portals=[pt]; L.pt={stage:0,inP:pt}; tween(pt,{r:34},.2); tone(300,.4,'sine',.06,500); say("Ooh, a shortcut!",1); }
+      if(L.pt){ const T=L.pt, cx=p.x+p.w/2;
+        if(T.stage===0){ T.inP.x+=clamp(cx-T.inP.x,520*dt); T.inP.y=L.floorY-30;
+          if(Math.abs(cx-T.inP.x)<16){ T.stage=1; T.t=0; P.hidden=true; P.frozen=true; tween(T.inP,{r:0},.3);
+            for(const t of L.tiles) if(t.tile<=3 && t.solid){ t.solid=false; tween(t,{y:t.y+700},.6,{ease:'in'}); }
+            T.out={x:90,y:200,r:0}; L.portals.push(T.out); tween(T.out,{r:34},.3); tone(800,.4,'sine',.06,-600); } }
+        else if(T.stage===1){ T.t+=dt; if(T.t>.5){ T.stage=2; tween(T.out,{r:0},.4); Object.assign(P,{hidden:false,frozen:false,x:78,y:185,vx:0,vy:0,noControl:3}); } }
+      }
+    }
+    if(d===3 && !p.gflip && p.x>450){ p.gflip=true; ceilSpikes(); sfx.whoosh(); say("Who ordered gravity? Not me.",1.2); }
+    if(d===4 && !L.elevator && p.x>300){ L.elevator=1; ceilSpikes(); tone(200,.8,'sawtooth',.05,400); say("Express elevator. Going up!",1.2); }
+    if(d===5 && !L.noDoor && p.ground===L.ledge){ L.noDoor=1; say("Nice. Still no.",1); setTimeout(()=>{ if(L===window.__nope.L){ L.ledge.solid=false; tween(L.ledge,{y:700},.4,{ease:'in'}); tween(L.door,{y:700},.4,{ease:'in'}); } },500); }
+    if(d>=6){                                                    // try 7+: fair, plus an honest shortcut portal
+      if(!L.helper && p.x>200){ const pt={x:560,y:L.floorY-34,r:0}; L.helper=pt; L.portals=[pt]; tween(pt,{r:34},.3); tone(300,.4,'sine',.05,500); say("Fine. Express lane. No tricks. Really.",2); }
+      if(L.helper && L.helper.r>20){ L.helper.y=L.floorY-34;
+        if(Math.abs(p.x+p.w/2-L.helper.x)<14 && Math.abs(p.y+p.h/2-L.helper.y)<40){ tween(L.helper,{r:0},.3); L.helper.r=19; tone(800,.3,'sine',.05,-500);
+          Object.assign(P,{x:850,y:340,vx:0,vy:0}); say("See? I can be nice.",1.4); } }
+    }
+  },
+  draw(L){ for(const pt of L.portals) drawPortal(pt); }},
+{ name:'8 · The End',
+  intro:d => d===0 ? "Final level. No tricks. No Kevins. I've grown as a person." : null,
+  build:() => ({solids:[R(0,480,960,60),R(300,400,120,18),R(520,330,120,18)], door:door(880)}),
+  onDoor(L){
+    if(L.stage!==0) return;
+    L.stage=1; L.ct=0; P.frozen=true; P.hidden=true; sfx.door(); credits={t:0};
+    say("Congratulations! You did it! Roll the credits!",3.5);
+  },
+  update(L,p,dt){
+    if(L.stage===1){
+      L.ct += dt;
+      if(L.ct>5){
+        L.stage=2; credits=null; L.noFall=true; sfx.whoosh(); shake=.3;
+        for(const s of L.solids){ s.solid=false; tween(s,{y:s.y+700},1.3,{ease:'in'}); }
+        L.door.active=false; tween(L.door,{y:900},1.3,{ease:'in'});
+        Object.assign(P,{frozen:false,hidden:false,x:L.door.x+8,y:L.door.y+30,vx:0,vy:-250});
+        say("...oh. I forgot to bolt down the floor.",2);
+      }
+    }
+    if(L.stage===2 && p.y>H+40) nextLevel({fromTop:true});
+  }},
+{ name:'8½ · The Basement', queueIntro:true,
+  intro:d => d===0 ? "Welcome to the basement. The REAL ending is down here." : "Basement rules: same as upstairs. Plus Kevin.",
+  build:() => ({solids:[R(0,480,960,60),R(380,380,200,18),R(760,420,30,60)], spikes:[{x:640,y:452,w:56,h:28},{x:150,y:452,w:56,h:28}],
+                turrets:[turret(950,250,'right',{near:180,far:600,heat:1.35,off:true})], door:door(860)}),
+  update(L,p,dt){
+    if(L.stage===0 && p.x>700){ L.stage=1; L.st=0; L.door.active=false; L.turrets[0].off=false; sfx.whoosh(); tween(L.door,{y:482},.22,{ease:'in'}); say("Ha. No. Also, Kevin's back. Angrier."); }
+    if(L.stage===1){ L.st+=dt; if(L.st>1.2){ L.stage=2; sfx.door(); tween(L.door,{y:420},.25,{done:()=>{L.door.active=true;}}); say("Kidding! Kidding. That's the real one. Go."); } }
+  }},
+];
+
+
+// Level 2's portal troll: a portal chases you down, then spits you out either across the gap
+// (and the door hops to the side you just left) or straight above the ditch.
+function portalTroll(L,p,dt){
+  const T=L.pt, cx=p.x+p.w/2;
+  if(T.stage===0){
+    T.inP.x += Math.max(-420*dt,Math.min(420*dt,cx-T.inP.x));
+    if(Math.abs(cx-T.inP.x)<16){
+      T.stage=1; T.t=0; P.hidden=true; P.frozen=true; tween(T.inP,{r:0},.3);
+      T.out = T.kind==='across' ? {x:L.side==='left'?780:120,y:380,r:0} : {x:480,y:300,r:0};
+      L.portals.push(T.out); tween(T.out,{r:34},.3); tone(800,.4,'sine',.06,-600);
+    }
+  } else if(T.stage===1){
+    T.t+=dt;
+    if(T.t>.55){
+      Object.assign(P,{hidden:false,frozen:false,x:T.out.x-12,y:T.out.y-15,vx:0,vy:0,noControl:T.kind==='ditch'?3:.4});
+      tween(T.out,{r:0},.4);
+      if(T.kind==='across'){
+        const left = L.side==='left';
+        L.side = left ? 'right' : 'left';
+        L.door.active=false; sfx.whoosh();
+        tween(L.door,{x:left?40:900,y:L.door.y},.8,{arc:220,ease:'lin',done:()=>{ L.door.active=true; }});
+        say("Oh, the door? It likes that side better now.",2);
+      } else L.deathOverride="Wrong exit. My bad.";
+      L.pt=null;
+    }
+  }
+}
+
+/* ---------- players & scoreboard ----------
+   Saved in the page's shared db as players/<viewer id>. Only people who are signed in AND allowed to
+   write (members of the owner's organization) get saved; everyone else plays normally, unsaved. */
+let DB=null, USER=null, myId=null, me=null, canSave=true, saving=false, savePending=false, runCounted=false;
+let practice=false;
+const store = { get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }, set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} } };
+(async () => {
+  if(!(window.claude && claude.use)) return;
+  try{ USER = await claude.use("user"); }catch(e){}
+  try{ DB = await claude.use("db"); }catch(e){}
+  if(!DB || !USER) return;
+  try{ myId = await USER.id(); }catch(e){}
+  if(!myId){ return; }
+  try{ const cw = USER.can ? await USER.can("data.write") : null; if(cw===false) canSave=false; }catch(e){}
+  try{ const snap = await DB.doc("players/"+myId).get(); if(snap.exists) me = {...snap.data()}; }catch(e){}
+  if(me && me.name) store.set("nope.name", me.name);
+})();
+// returning player on this device: pick their local record back up
+{ const b=localBoard(), pid=store.get("nope.pid"); if(pid && b[pid] && !me) me={...b[pid]}; }
+function myDoc(){ return DB && myId && canSave ? DB.doc("players/"+myId) : null; }
+// Fallback when the shared db isn't available: a Deathboard kept on this device (everyone who plays here)
+function localBoard(){ try{ return JSON.parse(store.get("nope.board")||"{}")||{}; }catch(e){ return {}; } }
+function localId(){ let id=store.get("nope.pid"); if(!id){ id="p"+Math.random().toString(36).slice(2,10); store.set("nope.pid",id); } return id; }
+function sharedOn(){ return !!myDoc(); }
+async function save(){
+  if(!me) return;
+  if(!sharedOn()){ const b=localBoard(); b[localId()]={...me, lastPlayed:new Date().toISOString()}; store.set("nope.board",JSON.stringify(b)); return; }
+  const ref=myDoc();
+  if(saving){ savePending=true; return; }
+  saving=true;
+  try{ await ref.set({...me, lastPlayed:new Date().toISOString()}); }
+  catch(e){ if(e && e.code==='invalid_argument') canSave=false; }
+  saving=false;
+  if(savePending){ savePending=false; save(); }
+}
+function ensureMe(){ if(!me) me={name:store.get("nope.name")||"Anonymous", runs:0, finishes:0, furthest:1, bestDeaths:null, bestTime:null, totalDeaths:0}; return me; }
+function recordLevel(i){
+  if(state!=='play' || practice) return; ensureMe();
+  if(!runCounted && i===0){ runCounted=true; me.runs=(me.runs||0)+1; save(); }
+  if(i+1 > (me.furthest||1)){ me.furthest=i+1; save(); }
+}
+function recordFinish(){
+  if(practice) return;
+  ensureMe(); me.finishes=(me.finishes||0)+1; me.furthest=LEVELS.length;
+  const t=Math.round(runTime);
+  if(me.bestDeaths==null || deaths<me.bestDeaths || (deaths===me.bestDeaths && t<(me.bestTime||1e9))){ me.bestDeaths=deaths; me.bestTime=t; }
+  save();
+  setTimeout(()=>{ if(state==='win' && !uiOpen()) openBoard(); }, 2600);
+}
+function recordDeath(){ if(practice) return; ensureMe(); me.totalDeaths=(me.totalDeaths||0)+1; save(); }
+
+// name prompt: asked once; the answer is saved... and then we tell them it doesn't matter
+const nameOv=document.getElementById('nameOv'), nameIn=document.getElementById('nameIn');
+const sbOv=document.getElementById('sbOv');
+function uiOpen(){ return nameOv.classList.contains('show') || sbOv.classList.contains('show'); }
+function requestStart(){
+  if(uiOpen()) return;
+  const known = (me && me.name) || store.get("nope.name");
+  if(known){ runCounted=false; startGame(); return; }
+  document.getElementById('nameCard').style.display=''; document.getElementById('jokeCard').style.display='none';
+  nameOv.classList.add('show'); nameIn.value=''; setTimeout(()=>nameIn.focus(),50);
+}
+document.getElementById('nameForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = nameIn.value.trim().replace(/\s+/g,' ').slice(0,24);
+  store.set("nope.name", name || "Anonymous");
+  if(!sharedOn()){ store.set("nope.pid",""); me=null; }
+  ensureMe(); me.name = name || "Anonymous"; save();
+  nameIn.blur();
+  document.getElementById('nameCard').style.display='none';
+  document.getElementById('jokeCard').style.display='';
+  document.getElementById('joke').textContent = name ? "Honestly, it does not matter. Just enjoy." : "Mysterious. Also doesn't matter. Just enjoy.";
+  setTimeout(()=>{ nameOv.classList.remove('show'); runCounted=false; startGame(); cv.focus(); }, 2300);
+});
+
+// scoreboard
+function fmtSecs(s){ if(s==null) return ''; return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+function closeBoard(){ sbOv.classList.remove('show'); cv.focus(); }
+document.getElementById('sbClose').addEventListener('click', closeBoard);
+document.getElementById('sbNew').addEventListener('click', () => { store.set("nope.name",""); store.set("nope.pid",""); me=null; closeBoard(); state='title'; requestStart(); });
+sbOv.addEventListener('pointerdown', e => { if(e.target===sbOv) closeBoard(); });
+document.getElementById('sbBtn').addEventListener('click', openBoard);
+async function openBoard(){
+  sbOv.classList.add('show');
+  const body=document.getElementById('sbBody'), joke=document.getElementById('sbJoke');
+  const named = me && me.name && me.name!=='Anonymous';
+  joke.style.display = named ? '' : 'none';
+  if(named) joke.textContent = "Just kidding. Your name DID matter. "+me.name+", you're on the Deathboard now, and everyone can see how bad you are.";
+  const msg=t=>{ body.innerHTML=''; const p=document.createElement('p'); p.textContent=t; body.appendChild(p); };
+  msg("Loading…");
+  let done=false; const timer=setTimeout(()=>{ if(!done) msg("Can't reach the scoreboard right now. Try again in a bit."); },10000);
+  try{
+    const shared = sharedOn();
+    const rows = shared ? (await DB.collection("players").limit(1000).get()).docs.map(d=>({id:d.id, ...d.data()}))
+                        : Object.entries(localBoard()).map(([id,r])=>({id, ...r}));
+    done=true; clearTimeout(timer);
+    const mine = shared ? myId : store.get("nope.pid");
+    document.getElementById('sbWhere').textContent = shared ? '' : 'Everyone who has played on this device.';
+    rows.splice(0, rows.length, ...rows.filter(r=>r && r.name));
+    rows.sort((a,b)=> (b.finishes>0)-(a.finishes>0)
+                   || (a.finishes>0 ? (a.bestDeaths-b.bestDeaths) || ((a.bestTime||0)-(b.bestTime||0)) : (b.furthest||1)-(a.furthest||1)));
+    if(!rows.length){ msg("Nobody yet. Be the first to suffer."); return; }
+    body.innerHTML='';
+    const tb=document.createElement('table'); tb.className='sb';
+    const hr=tb.insertRow(); ['#','Victim','Got to','Deaths'].forEach(h=>{ const th=document.createElement('th'); th.textContent=h; hr.appendChild(th); });
+    rows.slice(0,50).forEach((r,i)=>{
+      const tr=tb.insertRow(); if(r.id===mine) tr.className='me';
+      const c=(t,cls)=>{ const td=tr.insertCell(); td.textContent=t; if(cls) td.className=cls; };
+      c(String(i+1),'rank'); c(String(r.name).slice(0,24));
+      c(r.finishes>0 ? 'Finished · '+fmtSecs(r.bestTime) : 'Level '+(r.furthest||1));
+      c(String(r.finishes>0 ? r.bestDeaths : (r.totalDeaths||0)),'d');
+    });
+    body.appendChild(tb);
+
+  }catch(e){ done=true; clearTimeout(timer); msg("Can't reach the scoreboard right now. Try again in a bit."); }
+}
+/* ---------- game state ---------- */
+let state='title', li=0, L=null, P=null, deaths=0, deadT=0, runTime=0, shake=0, particles=[], credits=null, titleT=0;
+function newPlayer(x,y){ return {x,y,w:24,h:30,vx:0,vy:0,face:1,ground:null,coyote:0,dead:false,frozen:false,hidden:false,sq:1}; }
+function loadLevel(i,opts={}){
+  recordLevel(i);
+  li=i; const def=LEVELS[i]; tweens=[]; credits=null;
+  L = def.build(); L.def=def; L.t=0; L.stage=0; L.spikes=L.spikes||[]; L.turrets=L.turrets||[]; bolts=[];
+  P = newPlayer(40,450);
+  if(opts.fromTop){ P.x=468; P.y=-60; }
+  const line = def.intro(levelDeaths);
+  if(line){ (opts.respawn || def.queueIntro) ? sayNext(line) : say(line); }
+}
+function startGame(){
+  deaths=0; levelDeaths=0; runTime=0; particles=[]; state='play'; LEVELS.forEach(l=>delete l.mem);
+  // dev shortcut: add #level-5 to the URL to start on level 5
+  const m = /^#level-(\d+)$/.exec(location.hash||''); const n = m ? Math.min(LEVELS.length,Math.max(1,+m[1]))-1 : 0;
+  practice = n>0; // started mid-game: a practice run, not recorded
+  loadLevel(n);
+}
+function restartLevel(){ if(state==='play' && P && !P.dead && !P.frozen) kill('restart'); } // restarting counts as dying. House rules.
+function nextLevel(opts){ levelDeaths=0; loadLevel(li+1,opts); }
+function finishLevel(){ sfx.door(); if(li===LEVELS.length-1){ state='win'; say("You won. I'm as surprised as you are.",99); recordFinish(); } else nextLevel(); }
+function kill(reason){
+  if(P.dead) return;
+  P.dead=true; deaths++; levelDeaths++; recordDeath(); deadT=0; sfx.die(); shake=.25;
+  for(let i=0;i<26;i++) particles.push({x:P.x+12,y:P.y+15,vx:(Math.random()-.5)*520,vy:-Math.random()*560,life:.9,s:3+Math.random()*5});
+  const c = L.deathOverride ? L.deathOverride : reason==='restart' ? "Restarting counts as dying. My rules." : L.def.deathLine && L.def.deathLine(levelDeaths);
+  say(c || pick(reason==='bolt' ? BOLT_DEATH : DEATH).replace('{d}',deaths), 1.2);
+}
+
+function stepPlayer(dt){
+  const p=P; let ax=(input.right?1:0)-(input.left?1:0);
+  if(L.reverse) ax=-ax; // somebody wired the controls backwards
+  if(p.noControl>0){ p.noControl-=dt; ax=0; jumpQueued=0; }
+  if(p.stuck){ // something has grabbed the player: no escape, ride it down
+    p.vx=0; p.vy=0; p.y=p.stuck.y-p.h; jumpQueued=0;
+    if(p.y>H+60) kill();
+    return;
+  }
+  if(ax) p.face=ax;
+  p.vx += (ax*MAXS - p.vx)*Math.min(1,dt*(p.ground?16:10));
+  p.coyote = p.ground ? .1 : p.coyote-dt;
+  if(jumpQueued>0) jumpQueued-=dt;
+  if(jumpQueued>0 && p.coyote>0){ p.vy=-JUMP; p.coyote=0; jumpQueued=0; p.ground=null; p.sq=1.35; sfx.jump(); }
+  if(!input.jump && p.vy<-260) p.vy=-260;
+  p.vy = Math.max(-1300,Math.min(p.vy+(p.gflip?-G:G)*dt,1300));
+  const carry = p.ground && p.ground.solid ? p.ground.vx : 0;
+  p.x += (p.vx+carry)*dt;
+  for(const s of L.solids){ if(s.solid && overlap(p,s) && Math.min(p.y+p.h-s.y, s.y+s.h-p.y)>10){ p.x = (p.x+p.w/2 < s.x+s.w/2) ? s.x-p.w : s.x+s.w; p.vx=0; } }
+  p.x = Math.max(0,Math.min(W-p.w,p.x));
+  const wasGround = !!p.ground; p.ground=null;
+  p.y += p.vy*dt;
+  for(const s of L.solids){
+    if(!s.solid || !overlap(p,s)) continue;
+    if(p.vy>=0){ p.y=s.y-p.h; if(!wasGround && p.vy>500) p.sq=.7; p.vy=0; p.ground=s; }
+    else { p.y=s.y+s.h; p.vy=0; }
+  }
+  p.sq += (1-p.sq)*Math.min(1,dt*12);
+  if(p.y>H+80 && !L.noFall) kill();
+  const hb={x:p.x+4,y:p.y+4,w:p.w-8,h:p.h-4};
+  for(const sp of L.spikes){ if(sp.h>4 && overlap(hb,{x:sp.x+4,y:sp.y+8,w:sp.w-8,h:sp.h-8})) kill(); }
+}
+
+function update(dt){
+  titleT += dt; stepNarrator(dt);
+  shake = Math.max(0,shake-dt);
+  for(const pt of particles){ pt.vy+=G*.6*dt; pt.x+=pt.vx*dt; pt.y+=pt.vy*dt; pt.life-=dt; }
+  particles = particles.filter(p=>p.life>0);
+  if(credits) credits.t += dt;
+  if(state!=='play') return;
+  runTime += dt; L.t += dt;
+  for(const s of L.solids){ s.px=s.x; s.py=s.y; }
+  stepTweens(dt);
+  if(!P.dead && L.def.update) L.def.update(L,P,dt);
+  if(state!=='play') return;
+  for(const s of L.solids){ s.vx=(s.x-s.px)/dt; s.vy=(s.y-s.py)/dt; }
+  if(P.dead){ stepBolts(dt); deadT+=dt; if(deadT>1.1) loadLevel(li,{respawn:true}); return; }
+  if(!P.frozen) stepPlayer(dt);
+  stepTurrets(dt); stepBolts(dt);
+  if(state!=='play' || P.dead) return;
+  if(!P.dead && !P.frozen && L.door && L.door.active && overlap(P,L.door)){
+    if(L.def.onDoor) L.def.onDoor(L,P); else finishLevel();
+  }
+}
+
+/* ---------- drawing ---------- */
+function bg(){
+  const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#181a22'); g.addColorStop(1,'#101117');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='rgba(233,228,212,.05)';
+  for(let x=20;x<W;x+=40) for(let y=20;y<H;y+=40) ctx.fillRect(x,y,2,2);
+}
+function drawDoor(d){
+  if(d.mimic){ // it was never a door
+    ctx.fillStyle='#d9534f'; ctx.fillRect(d.x,d.y,d.w,d.h);
+    ctx.fillStyle='#14161c'; ctx.fillRect(d.x+4,d.y+28,d.w-8,14);
+    ctx.fillStyle='#fff'; for(let i=0;i<4;i++){ const tx=d.x+5+i*8;
+      ctx.beginPath(); ctx.moveTo(tx,d.y+28); ctx.lineTo(tx+4,d.y+35); ctx.lineTo(tx+8,d.y+28); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(tx,d.y+42); ctx.lineTo(tx+4,d.y+35); ctx.lineTo(tx+8,d.y+42); ctx.fill(); }
+    ctx.fillStyle='#ffe066'; ctx.fillRect(d.x+8,d.y+10,8,8); ctx.fillRect(d.x+24,d.y+10,8,8);
+    return;
+  }
+  if(d.shiver) d={...d,x:d.x+(Math.random()-.5)*1.6};
+  ctx.fillStyle='#ffcc4d'; ctx.fillRect(d.x,d.y,d.w,d.h);
+  ctx.fillStyle='#d9a12a'; ctx.fillRect(d.x+6,d.y+6,d.w-12,d.h-6);
+  ctx.fillStyle='#14161c'; ctx.beginPath(); ctx.arc(d.x+d.w-11,d.y+d.h/2+4,3,0,7); ctx.fill();
+  ctx.fillStyle='#ffcc4d'; ctx.font=`18px ${FONT}`; ctx.textAlign='center'; ctx.fillText('EXIT',d.x+d.w/2,d.y-6);
+}
+function drawSolid(s){
+  let ox=0; if(s.crumble && s.solid) ox=(Math.random()-.5)*4*Math.min(1,s.crumble*4);
+  if(s.grab) ox=(Math.random()-.5)*5;
+  if(s.hitT>0){ s.hitT-=1/60; ox=(Math.random()-.5)*3; }
+  let col = s.grab ? '#e8a598' : '#e9e4d4';
+  if(s.maxHp){ const f=s.hp/s.maxHp; col=`rgb(${Math.round(233-40*(1-f))},${Math.round(228-70*(1-f))},${Math.round(212-80*(1-f))})`; }
+  ctx.fillStyle=col; ctx.fillRect(s.x+ox,s.y,s.w,s.h);
+  if(s.maxHp && s.hp<s.maxHp && s.h>10){ // cracks
+    ctx.strokeStyle='#5b4a3a'; ctx.lineWidth=2; ctx.beginPath();
+    const c=s.maxHp-s.hp;
+    for(let i=0;i<c;i++){ const yy=s.y+6+((i*17)%(s.h-12)), xx=s.x+ox+((i*13)%(s.w-8))+4;
+      ctx.moveTo(xx,yy); ctx.lineTo(xx+(i%2?6:-6),yy+7); ctx.lineTo(xx+(i%2?2:-2),yy+13); }
+    ctx.stroke();
+  }
+  ctx.fillStyle='#bfb8a5'; ctx.fillRect(s.x+ox,s.y+s.h-4,s.w,Math.min(4,s.h));
+  ctx.fillStyle='#fffaf0'; ctx.fillRect(s.x+ox,s.y,s.w,3);
+}
+function drawSpike(sp){
+  if(sp.h<1) return;
+  ctx.fillStyle='#ff5a4f'; const n=Math.max(1,Math.round(sp.w/14)), w=sp.w/n;
+  ctx.beginPath();
+  if(sp.down){ for(let i=0;i<n;i++){ ctx.moveTo(sp.x+i*w,sp.y); ctx.lineTo(sp.x+i*w+w/2,sp.y+sp.h); ctx.lineTo(sp.x+(i+1)*w,sp.y); } ctx.fill(); return; }
+  for(let i=0;i<n;i++){ ctx.moveTo(sp.x+i*w,sp.y+sp.h); ctx.lineTo(sp.x+i*w+w/2,sp.y); ctx.lineTo(sp.x+(i+1)*w,sp.y+sp.h); }
+  ctx.fill();
+}
+function drawPlayer(p){
+  const sx=1/Math.sqrt(p.sq), sy=p.sq, w=p.w*sx, h=p.h*sy, x=p.x+p.w/2-w/2, y=p.y+p.h-h;
+  ctx.fillStyle='#5ad1ff'; ctx.fillRect(x,y,w,h);
+  ctx.fillStyle='#2a8fbd'; ctx.fillRect(x,y+h-4,w,4);
+  const ex = x+w/2+p.face*4;
+  ctx.fillStyle='#fff'; ctx.fillRect(ex-7,y+7,6,7); ctx.fillRect(ex+1,y+7,6,7);
+  ctx.fillStyle='#14161c'; ctx.fillRect(ex-6+p.face*1.5+1,y+9,3,4); ctx.fillRect(ex+2+p.face*1.5+1,y+9,3,4);
+}
+function drawTurret(t){
+  const j = t.nuts ? (Math.random()-.5)*4*t.heat : 0;
+  const x=t.x+j, y=t.y+j*.6;
+  // mount plate
+  ctx.fillStyle='#3a3f4d';
+  if(t.mount==='top') ctx.fillRect(t.x-22,0,44,t.y+2);
+  else if(t.mount==='right') ctx.fillRect(t.x-2,t.y-22,W-t.x+2,44);
+  else ctx.fillRect(0,t.y-22,t.x+2,44);
+  // barrel
+  ctx.save(); ctx.translate(x,y); ctx.rotate(t.ang);
+  ctx.fillStyle='#8a90a0'; ctx.fillRect(4,-5,24,10);
+  ctx.fillStyle='#14161c'; ctx.fillRect(24,-3,4,6);
+  ctx.restore();
+  // body: grey → angry red as Kevin gets closer to losing it
+  const r=Math.round(110+145*t.k), g=Math.round(118-28*t.k), b=Math.round(135-60*t.k);
+  ctx.fillStyle = t.off ? '#555a66' : t.overheat>0 ? '#6b5a55' : `rgb(${r},${g},${b})`;
+  ctx.beginPath(); ctx.arc(x,y,16,0,7); ctx.fill();
+  // eye
+  const ex=x+Math.cos(t.ang)*6, ey=y+Math.sin(t.ang)*6;
+  ctx.fillStyle = t.off ? '#777' : t.nuts ? '#ffe066' : '#fff';
+  ctx.beginPath(); ctx.arc(ex,ey,t.nuts?7:5,0,7); ctx.fill();
+  ctx.fillStyle='#14161c'; ctx.beginPath(); ctx.arc(ex+Math.cos(t.ang)*2,ey+Math.sin(t.ang)*2,t.nuts?2:2.5,0,7); ctx.fill();
+  if(t.nuts){ ctx.fillStyle='#ff5a4f'; ctx.font=`18px ${FONT}`; ctx.textAlign='center'; ctx.fillText('!!!',t.mount==='right'?x-14:t.mount==='left'?x+14:x,t.mount==='top'?y+36:y-24); }
+}
+function drawBolts(){
+  ctx.lineCap='round';
+  for(const b of bolts){
+    const sp=Math.hypot(b.vx,b.vy), tx=b.vx/sp*14, ty=b.vy/sp*14;
+    ctx.strokeStyle = b.hot ? 'rgba(255,90,79,.45)' : 'rgba(255,224,102,.35)'; ctx.lineWidth=7;
+    ctx.beginPath(); ctx.moveTo(b.x-tx,b.y-ty); ctx.lineTo(b.x,b.y); ctx.stroke();
+    ctx.strokeStyle = b.hot ? '#ff8a7a' : '#ffe066'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(b.x-tx,b.y-ty); ctx.lineTo(b.x,b.y); ctx.stroke();
+  }
+}
+function drawPortal(pt){
+  if(pt.r<1) return;
+  const cols=['#5b2bb5','#8a4dff','#c39bff','#14161c'];
+  for(let i=0;i<4;i++){ const f=1-i*.22+Math.sin(titleT*8+i)*.03;
+    ctx.fillStyle=cols[i]; ctx.beginPath(); ctx.ellipse(pt.x,pt.y,pt.r*.6*f,pt.r*1.25*f,0,0,7); ctx.fill(); }
+  ctx.strokeStyle='rgba(195,155,255,.6)'; ctx.lineWidth=2;
+  for(let i=0;i<3;i++){ ctx.beginPath(); ctx.ellipse(pt.x,pt.y,pt.r*.45,pt.r*1.05,0,titleT*5+i*2.1,titleT*5+i*2.1+1.2); ctx.stroke(); }
+}
+function drawCrusher(c){
+  ctx.strokeStyle='#5b6070'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(c.x+c.w/2,0); ctx.lineTo(c.x+c.w/2,c.y); ctx.stroke();
+  ctx.fillStyle='#5b6070'; ctx.fillRect(c.x,c.y,c.w,c.h-14);
+  ctx.fillStyle='#3a3f4d'; ctx.fillRect(c.x+8,c.y+8,c.w-16,c.h-30);
+  ctx.fillStyle='#ff5a4f'; ctx.beginPath();
+  for(let i=0;i<7;i++){ const w=c.w/7; ctx.moveTo(c.x+i*w,c.y+c.h-14); ctx.lineTo(c.x+i*w+w/2,c.y+c.h); ctx.lineTo(c.x+(i+1)*w,c.y+c.h-14); }
+  ctx.fill();
+}
+function wrap(text,maxW){
+  const words=text.split(' '), lines=[]; let line='';
+  for(const w of words){ const t=line?line+' '+w:w; if(ctx.measureText(t).width>maxW && line){ lines.push(line); line=w; } else line=t; }
+  if(line) lines.push(line); return lines;
+}
+function drawNarrator(){
+  const total=N.text.length/45+N.hold; if(!N.text || N.t>total+.35) return;
+  const a = N.t>total ? 1-(N.t-total)/.35 : 1;
+  ctx.save(); ctx.globalAlpha=a;
+  ctx.fillStyle='rgba(13,14,18,.92)'; ctx.strokeStyle='#3a3f4d'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(16,14,640,62,10) : ctx.rect(16,14,640,62); ctx.fill(); ctx.stroke();
+  // narrator face
+  ctx.fillStyle='#ff5a4f'; ctx.beginPath(); ctx.arc(48,45,18,0,7); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(52,41,6,0,7); ctx.fill();
+  ctx.fillStyle='#14161c'; ctx.beginPath(); ctx.arc(54+Math.sin(titleT*2)*1.5,41,2.8,0,7); ctx.fill();
+  ctx.fillRect(40,53,16,3);
+  ctx.fillStyle='#e9e4d4'; ctx.font=`26px ${FONT}`; ctx.textAlign='left'; ctx.textBaseline='middle';
+  const lines=wrap(N.text.slice(0,Math.floor(N.t*45)),560);
+  lines.slice(0,2).forEach((l,i)=>ctx.fillText(l,78,lines.length>1?33+i*24:45));
+  ctx.restore(); ctx.textBaseline='alphabetic';
+}
+function drawHUD(){
+  ctx.fillStyle='#e9e4d4'; ctx.font=`24px ${FONT}`; ctx.textAlign='right';
+  ctx.fillText(L.def.name,W-18,36);
+  ctx.fillStyle='#ff5a4f'; ctx.fillText('DEATHS: '+deaths,W-18,60);
+}
+function drawCredits(){
+  ctx.fillStyle='rgba(10,11,14,.94)'; ctx.fillRect(0,0,W,H);
+  const lines=['N O P E','','a game by ... me','design ... me','narration ... me','the floor ... structural','the player ... irrelevant','','THANK YOU FOR PLAYING','','(actually created by Engineers with ♥ at Productbox · productbox.dev)'];
+  ctx.textAlign='center';
+  lines.forEach((l,i)=>{ const y=H+40+i*48-credits.t*130; ctx.fillStyle=i===0||i===8?'#ffcc4d':i===10?'#8a90a0':'#e9e4d4'; ctx.font=`${i===0||i===8?46:i===10?24:32}px ${FONT}`; ctx.fillText(l,W/2,Math.max(120+i*48,y)); });
+}
+function fmtTime(s){ const m=Math.floor(s/60), r=Math.floor(s%60); return m+':'+String(r).padStart(2,'0'); }
+function drawTitle(){
+  bg();
+  ctx.fillStyle='#e9e4d4'; ctx.fillRect(0,440,W,100);
+  drawDoor({x:620+Math.sin(titleT*1.3)*80,y:380,w:40,h:60});
+  drawPlayer({x:300,y:410,w:24,h:30,sq:1,face:1});
+  ctx.textAlign='center'; ctx.fillStyle='#ffcc4d'; ctx.font=`120px ${FONT}`; ctx.fillText('NOPE',W/2,190);
+  // subtitle: "a ~~rage~~ calm, peaceful platformer"
+  ctx.font=`30px ${FONT}`; ctx.textAlign='left';
+  const parts=[['a ','#e9e4d4'],['rage','#8a90a0',true],[' calm, peaceful','#ffcc4d'],[' platformer','#e9e4d4']];
+  let tx=W/2-parts.reduce((a,p)=>a+ctx.measureText(p[0]).width,0)/2;
+  for(const [t,c,strike] of parts){
+    const w=ctx.measureText(t).width; ctx.fillStyle=c; ctx.fillText(t,tx,235);
+    if(strike){ ctx.strokeStyle='#ff5a4f'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(tx-3,226); ctx.lineTo(tx+w+3,222); ctx.stroke(); }
+    tx+=w;
+  }
+  ctx.textAlign='center'; ctx.fillStyle='#8a90a0'; ctx.font=`22px ${FONT}`; ctx.fillText('(very relaxing. trust me.)',W/2,265);
+  ctx.fillStyle='#e9e4d4'; ctx.font=`30px ${FONT}`;
+  ctx.globalAlpha=.55+.45*Math.sin(titleT*4); ctx.fillText('press any key or tap to start',W/2,330); ctx.globalAlpha=1;
+  ctx.fillStyle='#14161c'; ctx.font=`24px ${FONT}`; ctx.fillText('Created by Engineers with ♥ at Productbox (productbox.dev)',W/2,505);
+}
+function drawWin(){
+  ctx.fillStyle='rgba(10,11,14,.9)'; ctx.fillRect(0,0,W,H); ctx.textAlign='center';
+  ctx.fillStyle='#ffcc4d'; ctx.font=`72px ${FONT}`; ctx.fillText('THE END. FOR NOW.',W/2,180);
+  ctx.fillStyle='#e9e4d4'; ctx.font=`34px ${FONT}`;
+  ctx.fillText(`Deaths: ${deaths}   ·   Time: ${fmtTime(runTime)}`,W/2,262);
+  ctx.fillStyle='#8a90a0'; ctx.font=`26px ${FONT}`; ctx.fillText('We hope you found it relaxing.',W/2,298); ctx.fillStyle='#e9e4d4';
+  ctx.globalAlpha=.55+.45*Math.sin(titleT*4); ctx.font=`28px ${FONT}`; ctx.fillText('press any key or tap to play again',W/2,360); ctx.globalAlpha=1;
+  ctx.font=`24px ${FONT}`; ctx.fillStyle='#ffcc4d'; ctx.fillText('S or the ☠ button: see the Deathboard',W/2,400);
+  ctx.fillStyle='#8a90a0'; ctx.font=`24px ${FONT}`; ctx.fillText('Nope · Created by Engineers with ♥ at Productbox (productbox.dev)',W/2,480);
+}
+function draw(){
+  ctx.save();
+  if(state==='title'){ drawTitle(); ctx.restore(); return; }
+  if(shake>0) ctx.translate((Math.random()-.5)*10*shake/.25,(Math.random()-.5)*10*shake/.25);
+  bg();
+  if(L.door) drawDoor(L.door);
+  for(const s of L.solids) if(s.y<H+20) drawSolid(s);
+  if(L.def.draw) L.def.draw(L);
+  for(const sp of L.spikes) drawSpike(sp);
+  if(!P.dead && !P.hidden) drawPlayer(P);
+  for(const t of L.turrets) drawTurret(t);
+  drawBolts();
+  for(const pt of particles){ ctx.fillStyle=pt.c||'#5ad1ff'; ctx.globalAlpha=Math.max(0,pt.life/.9); ctx.fillRect(pt.x,pt.y,pt.s,pt.s); } ctx.globalAlpha=1;
+  if(credits) drawCredits();
+  drawHUD();
+  if(state==='win') drawWin();
+  drawNarrator();
+  ctx.restore();
+}
+
+/* ---------- loop ---------- */
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(1/30,(now-last)/1000); last=now;
+  if(!uiOpen()) update(dt); // paused while the name prompt or Deathboard is open
+  draw(); requestAnimationFrame(frame);
+}
+if(document.fonts && document.fonts.load) document.fonts.load(`26px ${FONT}`).catch(()=>{});
+window.__nope = { get li(){return li;}, get P(){return P;}, get L(){return L;}, get deaths(){return deaths;}, get state(){return state;} }; // debug/test hook
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
